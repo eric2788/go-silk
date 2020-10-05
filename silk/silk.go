@@ -15,7 +15,7 @@ import (
 type SilkEncoder struct {
 	codecDir    string
 	encoderPath string
-	cachePath	string
+	cachePath   string
 }
 
 func downloadCodec(url string, path string) (err error) {
@@ -32,12 +32,12 @@ func downloadCodec(url string, path string) (err error) {
 	return
 }
 
-func (s *SilkEncoder)Init(cachePath, codecPath string) error {
+func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 
 	appPath, err := os.Executable()
 	appPath = path.Dir(appPath)
 	if err != nil {
-		return  err
+		return err
 	}
 
 	s.cachePath = path.Join(appPath, cachePath)
@@ -63,41 +63,42 @@ func (s *SilkEncoder)Init(cachePath, codecPath string) error {
 	} else if goos == "linux" && arch == "arm64" {
 		encoderFile = "linux-arm64-encoder"
 	} else {
-		return errors.New(fmt.Sprintf("%s %s is not supported.", goos, arch))
+		return errors.New(fmt.Sprintf("%s-%s is not supported.", goos, arch))
 	}
 
 	s.encoderPath = path.Join(s.codecDir, encoderFile)
 
 	if !FileExist(s.encoderPath) {
-		if err = downloadCodec("https://cdn.jsdelivr.net/gh/wdvxdr1123/tosilk/codec/" + encoderFile, s.encoderPath); err != nil {
+		if err = downloadCodec("https://cdn.jsdelivr.net/gh/wdvxdr1123/tosilk/codec/"+encoderFile, s.encoderPath); err != nil {
 			return errors.New("下载依赖失败")
 		}
 	}
-	fmt.Println(s.encoderPath)
 	return nil
 }
 
-func (s *SilkEncoder)EncodeToSilkWithCache(rec []byte, tempName string) ([]byte, error) {
+func (s *SilkEncoder) EncodeToSilkWithCache(rec []byte, tempName string) ([]byte, error) {
 	// 1. 写入缓存文件
-	rawPath := path.Join(s.cachePath, tempName + ".wav")
-
+	rawPath := path.Join(s.cachePath, tempName+".wav")
 	err := ioutil.WriteFile(rawPath, rec, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
-	// os.Remove(rawPath)
+	defer os.Remove(rawPath)
+
 	// 2.转换pcm
-	pcmPath := path.Join(s.cachePath, tempName + ".pcm")
-	cmd := exec.Command("ffmpeg", "-i", rawPath , "-f", "s16le", "-ar", "24000", "-ac", "1", "-acodec", "pcm_s16le", pcmPath)
-	err = cmd.Run()
-	fmt.Println(err)
-	// efer os.Remove(pcmPath)
+	pcmPath := path.Join(s.cachePath, tempName+".pcm")
+	cmd := exec.Command("ffmpeg", "-i", rawPath, "-f", "s16le", "-ar", "24000", "-ac", "1", "-acodec", "pcm_s16le", pcmPath)
+	if err = cmd.Run(); err != nil {
+		return nil, err
+	}
+	defer os.Remove(pcmPath)
 
 	// 3. 转silk
-	silkPath := path.Join(s.cachePath, tempName + ".silk")
+	silkPath := path.Join(s.cachePath, tempName+".silk")
 	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-quiet", "-tencent")
-	err = cmd.Run()
-	fmt.Println(err)
+	if err = cmd.Run(); err != nil {
+		return nil, err
+	}
 
 	return ioutil.ReadFile(silkPath)
 }
