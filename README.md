@@ -2,11 +2,9 @@
 
 音频转成 silk 格式
 
-# Usage
+修改自[xiyaowong/tosilk](https://github.com/xiyaowong/tosilk)
 
-```shell
-./tosilk --help
-```
+# Usage
 
 # Thx
 

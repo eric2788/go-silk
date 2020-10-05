@@ -2,7 +2,7 @@
 package silk
 
 import (
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,11 +10,13 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
-	"time"
-	"tosilk/util"
 )
 
-var encoder string
+type SilkEncoder struct {
+	codecDir    string
+	encoderPath string
+	cachePath	string
+}
 
 func downloadCodec(url string, path string) (err error) {
 	resp, err := http.Get(url)
@@ -30,120 +32,72 @@ func downloadCodec(url string, path string) (err error) {
 	return
 }
 
-func init() {
-	// fmt.Println("====请确保已下载 FFmpeg 并已设置环境变量====")
-	// 检查依赖
+func (s *SilkEncoder)Init(cachePath, codecPath string) error {
+
 	appPath, err := os.Executable()
+	appPath = path.Dir(appPath)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return  err
 	}
-	codecDir := path.Join(path.Dir(appPath), "codec")
-	if !util.FileExist(codecDir) {
-		os.MkdirAll(codecDir, os.ModePerm)
+
+	s.cachePath = path.Join(appPath, cachePath)
+	s.codecDir = path.Join(appPath, codecPath)
+
+	if !FileExist(s.codecDir) {
+		_ = os.MkdirAll(s.codecDir, os.ModePerm)
+	}
+
+	if !FileExist(s.cachePath) {
+		_ = os.MkdirAll(s.cachePath, os.ModePerm)
 	}
 
 	goos := runtime.GOOS
 	arch := runtime.GOARCH
+
+	var encoderFile string
+
 	if goos == "windows" && arch == "amd64" {
-		encoder = path.Join(codecDir, "windows-encoder.exe")
-		if !util.FileExist(encoder) {
-			fmt.Println("下载Windows依赖")
-			if err = downloadCodec("https://cdn.jsdelivr.net/gh/xiyaowong/tosilk/codec/windows-encoder-exe", encoder); err != nil {
-				fmt.Printf("下载依赖失败, %v\n", err)
-				os.Exit(1)
-			}
-		}
+		encoderFile = "windows-encoder.exe"
 	} else if goos == "linux" && arch == "amd64" {
-		encoder = path.Join(codecDir, "linux-amd64-encoder")
-		if !util.FileExist(encoder) {
-			fmt.Println("下载linux amd64依赖")
-			if err = downloadCodec("https://cdn.jsdelivr.net/gh/xiyaowong/tosilk/codec/linux-amd64-encoder", encoder); err != nil {
-				fmt.Printf("下载依赖失败, %v\n", err)
-				os.Exit(1)
-			}
-		}
+		encoderFile = "linux-amd64-encoder"
 	} else if goos == "linux" && arch == "arm64" {
-		encoder = path.Join(codecDir, "linux-arm64-encoder")
-		if !util.FileExist(encoder) {
-			fmt.Println("下载linux arm64依赖")
-			if err = downloadCodec("https://cdn.jsdelivr.net/gh/xiyaowong/tosilk/codec/linux-arm64-encoder", encoder); err != nil {
-				fmt.Printf("下载依赖失败, %v\n", err)
-				os.Exit(1)
-			}
-		}
+		encoderFile = "linux-arm64-encoder"
 	} else {
-		fmt.Printf("%s %s is not supported.\n", goos, arch)
-		os.Exit(1)
+		return errors.New(fmt.Sprintf("%s %s is not supported.", goos, arch))
 	}
+
+	s.encoderPath = path.Join(s.codecDir, encoderFile)
+
+	if !FileExist(s.encoderPath) {
+		if err = downloadCodec("https://cdn.jsdelivr.net/gh/wdvxdr1123/tosilk/codec/" + encoderFile, s.encoderPath); err != nil {
+			return errors.New("下载依赖失败")
+		}
+	}
+	fmt.Println(s.encoderPath)
+	return nil
 }
 
-// FileToSilkBase64 音频文件转成silk base64
-func FileToSilkBase64(filePath string) (b64 string, err error) {
-	// p := fmt.Println
-	// 1. 转pcm
-	pcmPath := path.Join(path.Dir(filePath), "file.wav")
-	defer os.Remove(pcmPath)
+func (s *SilkEncoder)EncodeToSilkWithCache(rec []byte, tempName string) ([]byte, error) {
+	// 1. 写入缓存文件
+	rawPath := path.Join(s.cachePath, tempName + ".wav")
 
-	cmd := exec.Command("ffmpeg", "-i", filePath, "-f", "s16le", "-ar", "24000", "-ac", "1", "-acodec", "pcm_s16le", pcmPath)
-	cmd.Run()
-	// 2. 转silk
-	silkPath := path.Join(path.Dir(pcmPath), "file.silk")
-	defer os.Remove(silkPath)
-
-	cmd = exec.Command(encoder, pcmPath, silkPath, "-quiet", "-tencent")
-	cmd.Run()
-	// 3. 转base64
-	content, err := ioutil.ReadFile(silkPath)
+	err := ioutil.WriteFile(rawPath, rec, os.ModePerm)
 	if err != nil {
-		return
+		return nil, err
 	}
+	// os.Remove(rawPath)
+	// 2.转换pcm
+	pcmPath := path.Join(s.cachePath, tempName + ".pcm")
+	cmd := exec.Command("ffmpeg", "-i", rawPath , "-f", "s16le", "-ar", "24000", "-ac", "1", "-acodec", "pcm_s16le", pcmPath)
+	err = cmd.Run()
+	fmt.Println(err)
+	// efer os.Remove(pcmPath)
 
-	b64 = base64.StdEncoding.EncodeToString(content)
-	return
-}
+	// 3. 转silk
+	silkPath := path.Join(s.cachePath, tempName + ".silk")
+	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-quiet", "-tencent")
+	err = cmd.Run()
+	fmt.Println(err)
 
-// Base64ToSilkBase64 base64 转 silk base64
-func Base64ToSilkBase64(b64Str string) (b64 string, err error) {
-	data, err := base64.StdEncoding.DecodeString(b64Str)
-	if err != nil {
-		return
-	}
-
-	tempDir, _ := ioutil.TempDir("", "silk")
-	filePath := path.Join(tempDir, "file.wav")
-	defer os.RemoveAll(tempDir)
-
-	err = ioutil.WriteFile(filePath, data, os.ModePerm)
-	if err != nil {
-		return
-	}
-
-	return FileToSilkBase64(filePath)
-}
-
-// URLToSilkBase64 音频下载链接转base64
-func URLToSilkBase64(l string) (b64 string, err error) {
-	tempDir, _ := ioutil.TempDir("", "silk")
-	filePath := path.Join(tempDir, "file.wav")
-	defer os.RemoveAll(tempDir)
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	req, _ := http.NewRequest("GET", l, nil)
-	resp, err := client.Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	err = ioutil.WriteFile(filePath, body, os.ModePerm)
-	if err != nil {
-		return
-	}
-	return FileToSilkBase64(filePath)
+	return ioutil.ReadFile(silkPath)
 }

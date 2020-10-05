@@ -1,9 +1,23 @@
 package main
 
 import (
-	"tosilk/cmd"
+	"fmt"
+	"github.com/wdvxdr1123/go-silk/silk"
+	"io/ioutil"
 )
 
 func main() {
-	cmd.Execute()
+	silkEncoder := &silk.SilkEncoder{}
+	err := silkEncoder.Init("cache","codec")
+	if err != nil {
+		fmt.Println(err)
+	}
+	data, err := ioutil.ReadFile("test.mp3")
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, err = silkEncoder.EncodeToSilkWithCache(data, "test")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
