@@ -57,7 +57,9 @@ func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 	var encoderFile string
 
 	if goos == "windows" && arch == "amd64" {
-		encoderFile = "windows-encoder.exe"
+		encoderFile = "windows-amd64-encoder.exe"
+	} else if goos == "windows" && arch == "386" {
+		encoderFile = "windows-386-encoder.exe"
 	} else if goos == "linux" && arch == "amd64" {
 		encoderFile = "linux-amd64-encoder"
 	} else if goos == "linux" && arch == "arm64" {
