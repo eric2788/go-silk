@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	silkEncoder := &silk.SilkEncoder{}
+	silkEncoder := &silk.Encoder{}
 	err := silkEncoder.Init("cache", "codec")
 	if err != nil {
 		fmt.Println(err)

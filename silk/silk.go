@@ -12,7 +12,7 @@ import (
 	"runtime"
 )
 
-type SilkEncoder struct {
+type Encoder struct {
 	codecDir    string
 	encoderPath string
 	cachePath   string
@@ -20,6 +20,9 @@ type SilkEncoder struct {
 
 func downloadCodec(url string, path string) (err error) {
 	resp, err := http.Get(url)
+	if runtime.GOOS == "windows" {
+		path = path + ".exe"
+	}
 	if err != nil {
 		return
 	}
@@ -32,7 +35,7 @@ func downloadCodec(url string, path string) (err error) {
 	return
 }
 
-func (s *SilkEncoder) Init(cachePath, codecPath string) error {
+func (s *Encoder) Init(cachePath, codecPath string) error {
 
 	appPath, err := os.Executable()
 	appPath = path.Dir(appPath)
@@ -43,11 +46,11 @@ func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 	s.cachePath = path.Join(appPath, cachePath)
 	s.codecDir = path.Join(appPath, codecPath)
 
-	if !FileExist(s.codecDir) {
+	if !fileExist(s.codecDir) {
 		_ = os.MkdirAll(s.codecDir, os.ModePerm)
 	}
 
-	if !FileExist(s.cachePath) {
+	if !fileExist(s.cachePath) {
 		_ = os.MkdirAll(s.cachePath, os.ModePerm)
 	}
 
@@ -57,9 +60,9 @@ func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 	var encoderFile string
 
 	if goos == "windows" && arch == "amd64" {
-		encoderFile = "windows-amd64-encoder.exe"
+		encoderFile = "windows-amd64-encoder"
 	} else if goos == "windows" && arch == "386" {
-		encoderFile = "windows-386-encoder.exe"
+		encoderFile = "windows-386-encoder"
 	} else if goos == "linux" && arch == "amd64" {
 		encoderFile = "linux-amd64-encoder"
 	} else if goos == "linux" && arch == "arm64" {
@@ -70,15 +73,18 @@ func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 
 	s.encoderPath = path.Join(s.codecDir, encoderFile)
 
-	if !FileExist(s.encoderPath) {
+	if !fileExist(s.encoderPath) {
 		if err = downloadCodec("https://cdn.jsdelivr.net/gh/wdvxdr1123/tosilk/codec/"+encoderFile, s.encoderPath); err != nil {
 			return errors.New("下载依赖失败")
 		}
 	}
+	if runtime.GOOS == "windows" {
+		s.encoderPath = s.encoderPath + ".exe"
+	}
 	return nil
 }
 
-func (s *SilkEncoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([]byte, error) {
+func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([]byte, error) {
 	// 1. 写入缓存文件
 	rawPath := path.Join(s.cachePath, tempName+".wav")
 	err := ioutil.WriteFile(rawPath, record, os.ModePerm)
