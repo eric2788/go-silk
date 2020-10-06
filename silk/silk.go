@@ -76,10 +76,10 @@ func (s *SilkEncoder) Init(cachePath, codecPath string) error {
 	return nil
 }
 
-func (s *SilkEncoder) EncodeToSilkWithCache(rec []byte, tempName string) ([]byte, error) {
+func (s *SilkEncoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([]byte, error) {
 	// 1. 写入缓存文件
 	rawPath := path.Join(s.cachePath, tempName+".wav")
-	err := ioutil.WriteFile(rawPath, rec, os.ModePerm)
+	err := ioutil.WriteFile(rawPath, record, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +98,9 @@ func (s *SilkEncoder) EncodeToSilkWithCache(rec []byte, tempName string) ([]byte
 	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-quiet", "-tencent")
 	if err = cmd.Run(); err != nil {
 		return nil, err
+	}
+	if useCache == false {
+		defer os.Remove(silkPath)
 	}
 
 	return ioutil.ReadFile(silkPath)

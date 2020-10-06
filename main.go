@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	_, err = silkEncoder.EncodeToSilkWithCache(data, "test")
+	_, err = silkEncoder.EncodeToSilk(data, "test", true)
 	if err != nil {
 		fmt.Println(err)
 	}
