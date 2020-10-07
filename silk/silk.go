@@ -65,8 +65,14 @@ func (s *Encoder) Init(cachePath, codecPath string) error {
 		encoderFile = "windows-386-encoder"
 	} else if goos == "linux" && arch == "amd64" {
 		encoderFile = "linux-amd64-encoder"
+	} else if goos == "darwin" && arch == "amd64" {
+		encoderFile = "darwin-amd64-encoder"
+	} else if goos == "linux" && arch == "386" {
+		encoderFile = "linux-386-encoder"
 	} else if goos == "linux" && arch == "arm64" {
 		encoderFile = "linux-arm64-encoder"
+	} else if goos == "linux" && arch == "arm" {
+		encoderFile = "linux-arm-encoder"
 	} else {
 		return errors.New(fmt.Sprintf("%s-%s is not supported.", goos, arch))
 	}
