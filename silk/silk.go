@@ -101,7 +101,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 
 	// 2.转换pcm
 	pcmPath := path.Join(s.cachePath, tempName+".pcm")
-	cmd := exec.Command("ffmpeg", "-i", rawPath, "-f", "s16le", "-ar", "24000", "-ac", "1", "-acodec", "pcm_s16le", pcmPath)
+	cmd := exec.Command("ffmpeg", "-i", rawPath, "-f", "s16le", "-ar", "24000", "-ac", "1", pcmPath)
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
