@@ -109,7 +109,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 
 	// 3. 转silk
 	silkPath := path.Join(s.cachePath, tempName+".silk")
-	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-quiet", "-tencent")
+	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-rate", "24000", "-quiet", "-tencent")
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
