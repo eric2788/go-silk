@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/wdvxdr1123/go-silk/silk"
 	"io/ioutil"
+
+	"github.com/Yiwen-Chan/go-silk/silk"
 )
 
 func main() {

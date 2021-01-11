@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
+	"syscall"
 )
 
 type Encoder struct {
@@ -80,7 +81,7 @@ func (s *Encoder) Init(cachePath, codecPath string) error {
 	s.encoderPath = path.Join(s.codecDir, encoderFile)
 
 	if !fileExist(s.encoderPath) {
-		if err = downloadCodec("https://cdn.jsdelivr.net/gh/wdvxdr1123/tosilk/codec/"+encoderFile, s.encoderPath); err != nil {
+		if err = downloadCodec("https://cdn.jsdelivr.net/gh/Yiwen-Chan/tosilk/codec/"+encoderFile, s.encoderPath); err != nil {
 			return errors.New("下载依赖失败")
 		}
 	}
@@ -102,6 +103,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 	// 2.转换pcm
 	pcmPath := path.Join(s.cachePath, tempName+".pcm")
 	cmd := exec.Command("ffmpeg", "-i", rawPath, "-f", "s16le", "-ar", "24000", "-ac", "1", pcmPath)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
@@ -110,6 +112,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 	// 3. 转silk
 	silkPath := path.Join(s.cachePath, tempName+".silk")
 	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-rate", "24000", "-quiet", "-tencent")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
