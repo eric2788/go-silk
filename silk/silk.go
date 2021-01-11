@@ -81,7 +81,7 @@ func (s *Encoder) Init(cachePath, codecPath string) error {
 	s.encoderPath = path.Join(s.codecDir, encoderFile)
 
 	if !fileExist(s.encoderPath) {
-		if err = downloadCodec("https://cdn.jsdelivr.net/gh/Yiwen-Chan/tosilk/codec/"+encoderFile, s.encoderPath); err != nil {
+		if err = downloadCodec("https://cdn.jsdelivr.net/gh/Yiwen-Chan/go-silk/codec/"+encoderFile, s.encoderPath); err != nil {
 			return errors.New("下载依赖失败")
 		}
 	}
