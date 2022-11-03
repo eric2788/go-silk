@@ -4,13 +4,13 @@ package silk
 import (
 	"errors"
 	"fmt"
+	"github.com/Yiwen-Chan/go-silk/multiplat"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"runtime"
-	"syscall"
 )
 
 type Encoder struct {
@@ -103,7 +103,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 	// 2.转换pcm
 	pcmPath := path.Join(s.cachePath, tempName+".pcm")
 	cmd := exec.Command("ffmpeg", "-i", rawPath, "-f", "s16le", "-ar", "24000", "-ac", "1", pcmPath)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	multiplat.HideWindow(cmd)
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *Encoder) EncodeToSilk(record []byte, tempName string, useCache bool) ([
 	// 3. 转silk
 	silkPath := path.Join(s.cachePath, tempName+".silk")
 	cmd = exec.Command(s.encoderPath, pcmPath, silkPath, "-rate", "24000", "-quiet", "-tencent")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	multiplat.HideWindow(cmd)
 	if err = cmd.Run(); err != nil {
 		return nil, err
 	}
