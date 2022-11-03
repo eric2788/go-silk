@@ -3,5 +3,5 @@
 
 package multiplat
 
-func hideWindow() {
+func HideWindow(cmd *exec.Cmd) {
 }
