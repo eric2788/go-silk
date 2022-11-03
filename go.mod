@@ -1,3 +1,3 @@
-module github.com/Yiwen-Chan/go-silk
+module github.com/eric2788/go-silk
 
-go 1.14
+go 1.17

@@ -4,7 +4,7 @@ package silk
 import (
 	"errors"
 	"fmt"
-	"github.com/Yiwen-Chan/go-silk/multiplat"
+	"github.com/eric2788/go-silk/multiplat"
 	"io/ioutil"
 	"net/http"
 	"os"

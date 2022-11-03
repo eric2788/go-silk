@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/Yiwen-Chan/go-silk/silk"
+	"github.com/eric2788/go-silk/silk"
 )
 
 func main() {
