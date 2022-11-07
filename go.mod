@@ -1,3 +1,3 @@
-module github.com/eric2788/go-silk
+module github.com/Yiwen-Chan/go-silk
 
 go 1.17
